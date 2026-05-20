@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Статистика по товарам{% endblock %}
+{% block content %}
+<h2 class="mb-4">Статистика по фильмам (товарам)</h2>
+<p class="text-muted">Средний рейтинг, число отзывов, доля позитивных по модели.</p>
+<div class="table-responsive card p-3">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Фильм</th>
+        <th>Средний рейтинг</th>
+        <th>Отзывов</th>
+        <th>Доля позитива</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in product_rows %}
+      <tr>
+        <td>{{ row.product }}</td>
+        <td>{{ "%.2f"|format(row.avg_rating) }}</td>
+        <td>{{ row.n_reviews }}</td>
+        <td>
+          <div class="progress" style="height: 22px;">
+            <div class="progress-bar bg-success" style="width: {{ (row.pos_share * 100)|round(1) }}%">{{ "%.0f"|format(row.pos_share * 100) }}%</div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<a href="{{ url_for('index') }}" class="btn btn-outline-primary mt-3">На главную</a>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Главная — КиноОтзывы{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card p-4">
+      <h4 class="mb-3">Оставить отзыв</h4>
+      <p class="text-muted small">Оценка 1–5 и текст. Тональность подсчитывается моделью (лучшая из сравнения).</p>
+      <form method="post" action="{{ url_for('submit_review') }}" id="reviewForm">
+        <div class="mb-3">
+          <label class="form-label">Фильм (товар)</label>
+          <select name="product" class="form-select" required>
+            {% for p in product_list %}
+            <option value="{{ p }}">{{ p }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Оценка</label>
+          <select name="rating" class="form-select" required>
+            {% for s in range(1,6) %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Текст отзыва</label>
+          <textarea name="text" id="reviewText" class="form-control" rows="4" placeholder="Напишите отзыв на английском или русском…" required></textarea>
+        </div>
+        <div class="mb-3" id="livePred">
+          <span class="text-muted">Тональность (предпросмотр):</span>
+          <span id="predLabel" class="badge bg-secondary badge-sent">—</span>
+          <span id="predConf" class="ms-2 small text-muted"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">Сохранить в базу</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card p-4 mb-4">
+      <h4 class="mb-3">Рекомендации для вас</h4>
+      <p class="text-muted small">User-based collaborative filtering; при малой истории — топ по среднему рейтингу.</p>
+      {% if recs %}
+      <ol class="list-group list-group-numbered">
+        {% for r in recs %}
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+          <div class="ms-2 me-auto"><div class="fw-bold">{{ r.title }}</div></div>
+          <span class="badge bg-primary rounded-pill">{{ "%.2f"|format(r.score) }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="text-muted">Нет данных для рекомендаций.</p>
+      {% endif %}
+    </div>
+    <div class="card p-4">
+      <h5 class="mb-2">Сравнение моделей тональности</h5>
+      <p class="small text-muted mb-2">{{ best_model_note }}</p>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead class="table-light"><tr><th>Модель</th><th>Acc</th><th>Prec</th><th>Rec</th><th>F1</th></tr></thead>
+          <tbody>
+            {% for row in metrics_rows %}
+            <tr {% if row.name == best_model_name %}class="table-success"{% endif %}>
+              <td>{{ row.name }}</td>
+              <td>{{ row.acc }}</td>
+              <td>{{ row.prec }}</td>
+              <td>{{ row.rec }}</td>
+              <td>{{ row.f1 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-md-4">
+    <div class="card p-3"><h5 class="mb-2">Распределение оценок</h5><img src="data:image/png;base64,{{ chart_ratings }}" class="img-fluid rounded" alt=""></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3"><h5 class="mb-2">Отзывы по дням</h5><img src="data:image/png;base64,{{ chart_daily }}" class="img-fluid rounded" alt=""></div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3"><h5 class="mb-2">Облако слов</h5><img src="data:image/png;base64,{{ chart_wc }}" class="img-fluid rounded" alt=""></div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card p-4">
+      <h5 class="mb-3">Сводка по данным</h5>
+      <ul class="mb-0">
+        <li><strong>Топ фильмов по доле позитива:</strong> {{ top_pos_summary }}</li>
+        <li><strong>5 частых слов в негативных отзывах:</strong> {{ neg_words_summary }}</li>
+        <li><strong>Средний рейтинг (все отзывы в БД):</strong> {{ avg_rating }}</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('reviewText').addEventListener('input', function() {
+  const t = this.value;
+  if (t.length < 3) { document.getElementById('predLabel').textContent = '—'; document.getElementById('predConf').textContent=''; return; }
+  fetch('{{ url_for("api_predict") }}', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({text: t})
+  }).then(r => r.json()).then(d => {
+    const el = document.getElementById('predLabel');
+    el.textContent = d.label === 'позитивный' ? 'Позитивный' : 'Негативный';
+    el.className = 'badge badge-sent ' + (d.label === 'позитивный' ? 'bg-success' : 'bg-danger');
+    document.getElementById('predConf').textContent = (d.confidence * 100).toFixed(1) + '% уверенности';
+  }).catch(() => {});
+});
+</script>
+{% endblock %}

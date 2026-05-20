@@ -1,0 +1,26 @@
+# Большой датасет — только ссылка в README
+rotten_tomatoes_movie_reviews.csv
+*.csv
+
+# Генерируется при запуске
+reviews.db
+*.db
+
+# Отчёты и графики (создаются main.py)
+*.png
+forecast_reviews.png
+tomato_report.png
+imdb_report.png
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.env
+
+# Личное / отчёт в Word
+*.docx
+Практическая работа №10.docx
+lection_main.py
